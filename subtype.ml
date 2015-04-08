@@ -78,7 +78,7 @@ and base_subtype' s t k =
 let expand_kind tp k kexpect =
   orelse
     (subkind k kexpect >> subst_kind k)
-    (error "Expected type of kind %a, got type %a" fmt_kind kexpect fmt_tp tp)
+    (error "Expected type of kind %a, got type %a of kind %a" fmt_kind kexpect fmt_tp tp fmt_kind k)
 
 let expand_const kexpect f a =
   let (tp, k) = f() in

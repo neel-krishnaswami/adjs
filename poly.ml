@@ -679,8 +679,8 @@ and lcheck' ((pos, exp) as e) tp i =
 
   | ENext e1, Next tp1 -> lcheck e1 tp1 (i+1) >>= (fun t1 ->
                           advance (freevars_exp e1) t1 i)
-  | ENext _, TVar a -> expand_evar a "next" expand_next >>
-                           lcheck e tp i 
+  | ENext _, TVar a -> expand_evar a "next" expand_nextlin >>
+                       lcheck e tp i 
   | ENext _, _      -> mismatch "next" tp
 
   | ETuple es, Tensor tps when length es = length tps ->
@@ -721,7 +721,7 @@ and lcheck' ((pos, exp) as e) tp i =
     newid "_alin" >>= (fun a ->
     push (a, Type(Exist, Lin, None)) >> 
     lspecialize p (TVar a) >>= (fun _ ->  
-    check e1 (TVar a) i >>= (fun t1 ->
+    lcheck e1 (TVar a) i >>= (fun t1 ->
     cover lcheck [[p], e2] tp2 i [LHyp(TVar a, i, Fresh)] >>= (function
     | (t2, [u]) -> return (Let(u, t1, t2))
     | _ -> assert false))))
@@ -769,19 +769,3 @@ and lsynth (pos, exp) i =
     return (tp, t)))
     
   | _ -> error "cannot synthesize type for expression"
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

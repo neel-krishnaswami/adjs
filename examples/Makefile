@@ -6,7 +6,7 @@ examples:
 	../adjsc -I .. -t test5 -o test5 test5.adjs
 	../adjsc -I .. -t test6 -o test6 test6.adjs
 	../adjsc -I .. -t test7 -o test7 test7.adjs
-#	../adjsc -I .. -t test8 -o test8 test8.adjs
+	../adjsc -I .. -t test8 -o test8 test8.adjs
 #	../adjsc -I .. -t test8 -o test8 test8-broken.adjs
 #	../adjsc -I .. -t test9 -o test9 test9-broken.adjs
 

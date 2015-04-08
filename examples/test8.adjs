@@ -9,12 +9,6 @@ let rec zip (a :: as) (b :: bs) = cons((a, b), zip as bs)
 val or : bool × bool → bool
 let or (b1, b2) = if b1 then true else b2
 
-val const : ∀ a. !a → stream a
-let rec const !x = cons(x, const (!x))
-
-val falses : stream bool
-let falses = const (!false)
-
 val orStream : stream bool → stream bool → stream bool
 let orStream bs1 bs2 = map (!or) (zip bs1 bs2)
 
@@ -23,28 +17,25 @@ let aButton = G(let b = run mkButton in
                 let txt = run (mkText "Click me!") in
 		run attach (b, txt))
 
-
-val growButton : G(∀a. F(stream bool) ⊗ dom a ⊸
-                       F(stream bool) ⊗ dom a)
+val growButton : G(∀a. dom a ⊗ F(stream bool) ⊸ dom a)
 let growButton =
-  G(val recur : ∀ a. dom a ⊗ F(stream bool) ⊸
-                     dom a ⊗ F(stream bool) 
+  G(val recur : ∀ a. dom a ⊗ F(stream bool) ⊸ dom a 
     let rec recur (w, F (b :: bs)) =
       if b then
+	let w2 = run aButton in
+	let (w2, F (b2 :: bs2)) = run clicks w2 in
+	let w = run attach (w, w2) in
 	let w0 :: wnext = w in
-	let •(wnext, F bs) = •(wnext, F bs) in 
-//	  •(let w2 = run aButton in
-//	    let bs2 = run clicks w2 in
-//	    let wnext = run attach (wnext, w2) in
-//	    let F bsnext = F(orStream bs bs2) in
-//	    recur (wnext, F bsnext)) in
-	(w0 :: wnext, F (b :: bs))
+	w0 :: recur (wnext, F (orStream bs bs2))
       else
-        (w, F (b :: bs))
-    in
+	let w0 :: wnext = w in
+	w0 :: recur (wnext, F bs)
+   in
     recur)
 	 
 val main : G(∃a. dom a)
-let main = G(run aButton)
+let main = G(let w = run aButton in
+	     let (w, F bs) = run clicks w in 
+	     run growButton (w, F bs))
 
 in main 
