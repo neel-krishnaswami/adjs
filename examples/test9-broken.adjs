@@ -1,0 +1,26 @@
+val simplify : option string -> string
+let simplify o =
+  match o begin
+  | None -> ""
+  | Some s -> s
+  end
+
+val map : forall a b. alloc -> !(a -> b) -> stream a -> stream b
+let rec map u (!f) (x :: xs) = cons(u, f x, map u (!f) xs)
+  
+
+val keypressTest : alloc -> G(exists a. dom a)
+let keypressTest u =
+  G(val grow : forall a. dom a -o F string -o F(stream string) -o dom a
+    let rec grow w (F s1) (F (s2 :: ss)) =
+      let w = run (text (cat (s1, s2))) w in
+      let (wnow, next wnext) = run split w in
+      run merge (wnow, next(grow wnext (F (cat (s1, s2))) (F ss)))
+    in
+    let w = run (mkText "Start typing here: ") in
+    let (w, F keys) = run (keypress u) w in
+    grow w (F "Start typing here: ") (F (map u (!simplify) keys)))
+      
+in
+
+keypressTest

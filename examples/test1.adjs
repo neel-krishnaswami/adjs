@@ -1,0 +1,27 @@
+type option a =
+  | None
+  | Some of a 
+
+val omap : forall a b. (a -> b) -> option a -> option b 
+let omap f v = 
+  match v begin
+  | None -> None
+  | Some x -> Some (f x)
+  end 
+
+val ojoin : forall a. option (option a) -> option a
+let ojoin v = 
+  match v begin
+  | Some (Some x) -> Some x
+  | _ -> None
+  end 
+
+val blah : G(forall a. dom a -o exists b. dom b)
+let blah = G(fun w -> w)
+
+val main : G(exists a. dom a)
+let main = 
+  G(let wroot = run (mkText "") in 
+    run blah wroot)
+
+in main 

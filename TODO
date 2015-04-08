@@ -1,0 +1,129 @@
+Desired type system extensions:
+
+0. Stable/dynamic datatypes
+1. Abstract types 
+2. Mutually recursive definitions 
+3. Explicit polymorphic abstractions
+4. Type definitions
+5. Higher-kinded polymorphism 
+6. Records
+7. Arrays
+8. Index domains
+9. Disjunctive linear datatypes 
+10. GADTs
+11. Row polymorphism 
+12. Implicit/qualified types 
+13. Dependent types
+
+Questions:
+
+0. Syntax for kind annotations 
+
+   We want to leave off kind annotations if possible. This means introducing kind evars
+   into our context, which is easy. What is harder is the syntax for kind annotations.
+
+   This is Coq-style:
+
+     forall (a b : int), (c d : lin). (a -> b) -> G(c -o d)
+
+  We can also explicitly parenthesize and annotates each tycon needing annotation:
+
+     forall a b c (d : int -> int) e. a -> b -> d c 
+ 
+ I will try the latter form for now, with the option of changing it to
+ something less noisy later. 
+
+1. Can we accomodate type definitions *without* necessarily having type-level lambdas?
+
+1a. We can do this by requiring that all type definitions be fully applied when they
+    are used. As a result, we can give a definition like:
+
+    type pair : int -> int -> int 
+    type pair a b = (a & b)
+ 
+    but we can only use it as "pair int int", and not as "pair". This considerably
+    limits the utility of such definitions. Does it restrict them too much?
+
+1b. Another approach is to restrict subtyping for higher-kinded definitions.
+
+    We can say that 
+
+       \Gamma, a:k1 |- F a <: G a : k2 
+       -------------------------------
+         \Gamma |- F <: G : k1 -> k2      
+
+   This means that the subtyping relation assumes that all type
+   definitions are potentially co- and contra-variant. As as a result,
+   we do not need to make any hypotheses about the variance of the 
+   type constructors. 
+
+   Then the subtyping relation at higher kind just eta-expands until
+   it hits a base kind, and then unfolding a definition will never 
+   leave us with a lambda. 
+
+   This subsumes 1a, while still blocking type-level lambda
+   abstractions. The question is: how does this interact with 
+   stability?
+
+   So the only substitution rule remains the same:
+  
+          \Gamma |-* \Gamma(A) <: \Gamma(B) : b 
+         ---------------------------------------
+                \Gamma |- A <: B : b 
+
+   We should represent applications in spine form to make this work
+   nicely.  
+
+1. Do we need subkinding between stable and dynamic types, or can 
+   we get away without it? 
+
+   I don't want it. I have enough subtyping already, and subkinding
+   will screw up dependent types when I add it. Implicit/qualified 
+   types can handle the reasonable uses by letting us pass stability 
+   constraints as arguments.
+
+1' How about the stability flags on datatypes?
+
+   We can declare datatypes to be *stable*, which means that every
+   branch is a stable type, assuming that all the type arguments are
+   stable. Consider:
+
+   stable type list a = Nil of unit | Cons of (a & list a)
+
+   Now, we assume a is stable, that list is a stable type constructor.
+   
+   Note that unit is stable, and (a & list a) is stable if a and list
+   a are stable. We assumed a is stable, so this leaves showing list a
+   is stable. However, we assumed list is a stable type constructor,
+   so applying it to the stable type a gives a stable type. 
+
+   This means each type variable needs to carry a  
+
+2. How can we handle explicit type applications? (For fullly
+   impredicative applications.)
+
+   1. put term-level applications in spine form. 
+   2. Add a head marker (ala Coq) to switch to explicit 
+      mode. 
+   3. Syntax of explicit type applications:
+      
+      val id : forall a. a -> a 
+      let id a x = x 
+
+      Then we can write:
+
+      @(map ~num ~num (fun x -> x + x) (Cons(3, Cons(4, Nil))))
+
+      vs
+      
+      map (fun x -> x) (Cons(3, Cons(4, Nil)))
+   
+      or even
+
+      @(id ~(forall a. a -> a) id) : (forall a. a -> a)
+
+3. Records
+   
+   The obvious thing is Morrow-style row polymorphism. There are 
+   questions about how to map records with duplicated labels to JS
+   objects.

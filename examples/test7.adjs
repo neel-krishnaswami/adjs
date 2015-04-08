@@ -1,0 +1,138 @@
+type event =
+  | Nothing
+  | Digit of num
+  | Clear
+  | Push
+  | Pop
+  | BinOp of (num → num → num)
+  | UnOp of (num → num)
+
+type state : int 
+let state = list num
+
+type window : lin
+let window = ∃a. dom a
+
+type input : int
+let input = G(window ⊗ F (stream event))
+
+val choose : event × event → event
+let choose (e1, e2) =
+  match e1 begin
+  | Nothing → e2
+  | e1      → e1
+  end
+
+val step : event → state → state 
+let step e stack =
+  let pair = (e, stack) in 
+  match pair begin
+  | (Digit n, Cons(m, rest))          → Cons(n + (10 * m), rest)
+  | (Digit n, Nil)                    → Cons(n, Nil)
+  | (Clear, Cons(n, rest))            → Cons(0, rest)
+  | (Push, stack)                     → Cons(0, stack)
+  | (Pop, Cons(_, rest))              → rest
+  | (BinOp f, Cons(n, Cons(m, rest))) → Cons(f n m, rest)
+  | (UnOp f, Cons(n, rest))           → Cons(f n, rest)
+  | (_,_)                             → stack 
+  end
+
+val states : state → stream event → stream state
+let rec states state (e :: es) =
+  let □state = □(step e state) in 
+  state :: states state es
+
+val ints : num → stream num
+let rec ints n = n :: ints (n+1)
+
+val stackToString : state → string
+let loop stackToString ns =
+  match ns begin
+  | Nil          → "--"
+  | Cons(n, Nil) → toString n
+  | Cons(m, xs)  → cat(toString m, cat("  ", stackToString xs))
+  end
+
+val map : ∀ a b. □(a → b) → stream a → stream b 
+let rec map (□f) (x :: xs) =
+  f x :: map (□f) xs
+
+val zip : ∀ a b. stream a → stream b → stream (a × b)
+let rec zip (a :: as) (b :: bs) = (a,b) :: zip as bs
+
+val unfold : ∀ a b. □(a → b × •a) → a → stream b
+let rec unfold (□f) seed =
+  let (b, •seed) = f seed in
+  b :: unfold (□f) seed
+
+val mux : stream event → stream event → stream event
+let mux es1 es2 = map (□choose) (zip es1 es2)
+
+val button : string → event → input
+let button label e =
+  G(let w = run mkButton in
+    let w = run (text label) w in
+    let w = run (width "4em") w in 
+    let (w, F bs) = run clicks w in
+    (w, F (map (□(fun b → if b then e else Nothing)) bs)))
+
+val numeric : num → input
+let numeric n = button (toString n) (Digit n)
+
+val panel : G window → (input × input × input × input) → input
+let panel mkBox (b1, b2, b3, b4) =
+  G(let box = run mkBox in
+    let (w1, F es1) = run b1 in
+    let (w2, F es2) = run b2 in
+    let (w3, F es3) = run b3 in
+    let (w4, F es4) = run b4 in
+    let box = run attach (box, w1) in
+    let box = run attach (box, w2) in
+    let box = run attach (box, w3) in
+    let box = run attach (box, w4) in
+    (box, F (mux es1 (mux es2 (mux es3 es4)))))
+ 
+val inputPanel : input
+let inputPanel =
+  panel vbox (panel hbox (numeric 7,
+                          numeric 8,
+                          numeric 9,
+                          button "x" (BinOp (fun a b → a * b))),
+              panel hbox (numeric 4,
+                          numeric 5,
+                          numeric 6,
+                          button "+" (BinOp (fun a b → a + b))),
+              panel hbox (numeric 1,
+                          numeric 2,
+                          numeric 3,
+                          button "Pop" (Pop)),
+              panel hbox (button "+/-" (UnOp (fun n → 0 - n)),
+                          numeric 0,
+                          button "C" (Clear),
+                          button "Push" (Push)))
+
+val dynlabel : stream string → G window
+let dynlabel ss =
+  G(val displayText : ∀ a. F (stream string) ⊸ dom a ⊸ dom a
+    let rec displayText F(s :: ss) w =
+      let w = run (text s) w in
+      let w0 :: w1 = w in
+      w0 :: displayText (F ss) w1
+    in
+    let w = run (mkText "") in 
+    displayText (F ss) w)
+    
+val main : G window
+let main =
+  G(let (wpanel, F events) = run inputPanel in
+    let wdisplay = run ((let events : stream state = states (Nil) events in
+                         let labels : stream string = map (□stackToString) events in
+                         dynlabel labels) : G window) in
+    let wdisplay = run (backgroundColor "rgb(60,60,60)") wdisplay in
+    let wdisplay = run (fontFamily "monospace") wdisplay in
+    let box = run vbox in
+    let box = run attach (box, wdisplay) in
+    let box = run attach (box, wpanel) in
+    box)
+
+in main 

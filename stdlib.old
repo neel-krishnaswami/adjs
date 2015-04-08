@@ -1,0 +1,24 @@
+val toString : num -> string
+
+val mkText : G(F(stream string) -o window)
+val mkButton : G(window)
+val attach : G((window * window) -o window)
+
+val cat : string & string -> string
+
+val div : G(window)
+
+val color : string -> G(window -o window)
+val font : string & num -> G(window -o window)
+val width : string -> G(window -o window)
+
+val vbox : G(window)
+val hbox : G(window)
+
+val clicks : G(window -o window * F (stream bool))
+val mouseover : G(window -o window * F (stream bool))
+
+val dynamic : stream (G(window -o window)) -> G(window -o window)
+
+
+

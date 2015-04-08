@@ -1,0 +1,186 @@
+type option a = None | Some of a
+
+type list a = Nil | Cons of a & list a
+
+val maplist : forall a b. (a -> b) -> list a -> list b
+let maplist f =
+  fun loop iter xs ->
+    match xs begin
+    | Nil -> Nil
+    | Cons(y, ys) -> Cons(f y, iter ys)
+    end
+
+type event =
+  | Nothing
+  | Digit of num
+  | Clear
+  | Push
+  | Pop
+  | BinOp of (num -> num -> num)
+  | UnOp of (num -> num)
+
+val choose : event & event -> event
+let choose (e1, e2) =
+  match e1 begin
+  | Nothing -> e2
+  | e1      -> e1
+  end
+
+val step : event -> list num -> list num 
+let step e stack =
+  let pair : event & list num = (e, stack) in 
+  match pair begin
+  | (Digit n, Cons(m, rest))          -> Cons(n + 10 * m, rest)
+  | (Digit n, Nil)                    -> Cons(n, Nil)
+  | (Clear, Cons(n, rest))            -> Cons(0, rest)
+  | (Push, stack)                     -> Cons(0, stack)
+  | (Pop, Cons(_, rest))              -> rest
+  | (BinOp f, Cons(n, Cons(m, rest))) -> Cons(f n m, rest)
+  | (UnOp f, Cons(n, rest))           -> Cons(f n, rest)
+  | (_,_)                             -> stack 
+  end
+
+val display : list num -> string
+let loop display ns =
+  match ns begin
+  | Nil          -> "--"
+  | Cons(n, Nil) -> toString n
+  | Cons(m, xs)  -> cat(toString m, cat("  ", display xs))
+  end
+
+val map : forall a b. !(a -> b) -> stream a -> stream b 
+let rec map (!f) (x :: xs) =
+  cons(f x, map (!f) xs)
+
+val zip : forall a b. stream a -> stream b -> stream (a & b)
+let rec zip (a :: as) (b :: bs) =
+  cons((a,b), zip as bs)
+
+val mux : stream event -> stream event -> stream event
+let mux es1 es2 = map (!choose) (zip es1 es2)
+
+val button : string -> event -> G((exists a. dom a) * F (stream event))
+let button label e =
+  G(let w = run mkButton in
+    let w = run (text label) w in
+    let (w, F bs) = run clicks w in
+    (w, F (map (!(fun b -> if b then e else Nothing)) bs)))
+
+val numeric : num -> G((exists a. dom a) * F (stream event))
+let numeric n = button (toString n) (Digit n)
+
+
+
+// loops 
+val panel_test12 : G(exists (a : int). I) 
+let panel_test12 = 
+   G(let () = ( () : exists (a : int). I) in ())
+
+
+// loops 
+val panel_test11 : G(exists (a : int). I) -> G(exists (a : int). I)
+let panel_test11 b1 = 
+   G(let () = run b1 in ())
+
+// terminates 
+val panel_test10 : G(exists (a : int). I * I) -> G(exists (a : int). I * I)
+let panel_test10 b1 = 
+   G(let w = run b1 in w)
+
+// terminates 
+val panel_test10 : G(exists (a : int). I * I) -> G(exists (a : int). I * I)
+let panel_test10 b1 = 
+   G(run b1)
+
+// terminates 
+val panel_test9 : G(exists (a : int). I) -> G(exists (a : int). I)
+let panel_test9 b1 = 
+   G(let w = run b1 in w)
+
+// loops
+val panel_test8 : G(exists (a : int). I * I) -> G(exists (a : int). I * I)
+let panel_test8 b1 = 
+   G(let (w1, fbs) = run b1 in
+     (w1, fbs))
+
+
+// terminates 
+val panel_test7 : G((exists (a : int). dom a) * I) -> G((exists (a : int). dom a) * I)
+let panel_test7 b1 = 
+   G(let (w1, fbs) = run b1 in
+     (w1, fbs))
+
+
+// terminates 
+val panel_test6 : G(I * I) -> G(I * I)
+let panel_test6 b1 = 
+   G(let (w1, fbs) = run b1 in
+     (w1, fbs))
+
+// loops 
+val panel_test5 : G(exists a. dom a * I) -> G(exists a. dom a * I)
+let panel_test5 b1 = 
+   G(let (w1, fbs) = run b1 in
+     (w1, fbs))
+
+
+// loops 
+val panel_test4 : G(exists a. dom a * F (stream (option event))) -> G(exists a. dom a * F (stream (option event)))
+let panel_test4 b1 = 
+   G(let (w1, fbs) = run b1 in
+     (w1, fbs))
+
+// terminates 
+val panel_test3 : G(F (stream (option event))) -> G(F (stream (option event)))
+let panel_test3 b1 = 
+  G(let F bs = run b1 in F bs)
+
+// terminates 
+val panel_test2 : G(exists a. dom a) -> G(exists a. dom a)
+let panel_test2 b =
+   G(let w = run b in w)
+
+// loops 
+val panel_test1 : G(exists a. dom a * F (stream (option event))) -> G(exists a. dom a * F (stream (option event)))
+let panel_test1 b1 = 
+  G(let (w1, F bs) = run b1 in
+    (w1, F bs))
+
+val panel_test0 :
+  G(exists a. dom a) -> 
+  G(exists a. dom a) -> 
+  G(exists a. dom a) -> 
+  G(exists a. dom a)
+let panel_test0 mkBox mkB1 mkB2 = 
+  G(let box = run mkBox in
+    let w1 = run mkB1 in
+    let w2 = run mkB2 in
+    let box = run attach (box, w1) in
+    let box = run attach (box, w2) in 
+    box)
+
+val panel :
+  G(exists a. dom a) -> 
+  (G((exists a. dom a) * F (stream event)) & 
+   G((exists a. dom a) * F (stream event)) & 
+   G((exists a. dom a) * F (stream event)) & 
+   G((exists a. dom a) * F (stream event))) ->
+  G((exists a. dom a) * F (stream event))
+let panel mkBox (b1, b2, b3, b4) =
+  G(let box = run mkBox in
+    let (w1, F es1) = run b1 in
+    let (w2, F es2) = run b2 in
+    let (w3, F es3) = run b3 in
+    let (w4, F es4) = run b4 in
+    let box = run attach (box, w1) in
+    let box = run attach (box, w2) in
+    let box = run attach (box, w3) in
+    let box = run attach (box, w4) in
+    (box, F (mux es1 (mux es2 (mux es3 es4)))))
+    
+    
+
+val main : G(exists a. dom a)
+let main = mkButton
+
+in main 

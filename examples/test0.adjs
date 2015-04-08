@@ -1,0 +1,19 @@
+val string_of_bool : bool -> string 
+let string_of_bool b = 
+  if b then "true" else "false"
+
+val map : forall a b. !(a -> b) -> alloc -> stream a -> stream b
+let rec map (!f) u (x :: xs) =
+  cons(u, f x, map (!f) u xs)
+
+val ones : alloc -> stream num
+let rec ones u = cons(u, 1, ones u)
+
+val main : alloc -> G(exists a. dom a)
+let main u = 
+  G(let button = run mkButton in
+    let (button2, F bs) = (run (mouseover u)) button in
+    let text = run (mkText (map (!string_of_bool) u bs)) in 
+    (run attach) (button2, text))
+
+in main 

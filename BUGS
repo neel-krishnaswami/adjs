@@ -1,0 +1,25 @@
+BUGS
+====
+
+* Datatypes without parameters are broken. 
+
+  To fix this temporarily, change the check_kind/synth_kind routines
+  to return TApp(TVar d, []) instead of TVar d when d is a datatype
+  binding.
+
+* Guardedness checking in datatype declarations is not implemented. 
+
+* Datatypes are assumed to be stable, which means 
+
+    type foo = Foo of next int 
+
+  is incorrectly assumed to be stable! 
+
+* next(e, e') should put the permission second, not first
+
+* higher-rank polymorphism does not correctly implement the instantiation
+  routines from "Complete and Easy Bidirectional Typechecking for Higher-Rank
+  Polymorphism"
+
+* Pattern and constructor syntax for cons cells is asymmetric 
+

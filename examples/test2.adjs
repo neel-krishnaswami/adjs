@@ -1,0 +1,35 @@
+val map : ∀ a b. □(a → b) → stream a → stream b
+let rec map □f (x :: xs) = f x :: map (□f) xs
+
+val unfold : ∀ a b. □(a → b × •a) → a → stream b
+let rec unfold □f seed =
+  let (v, •seed) = f seed in
+  v :: unfold (□f) seed
+
+val count : stream bool → stream num
+let count bs =
+  unfold
+    (□(fun (n, (b :: bs)) →
+         let m : num = if b then n+1 else n in 
+         (m, •(m, bs))))
+    (0, bs)
+
+val dynlabel : stream string → G(∃a. dom a)
+let dynlabel msgs =
+  G(val update : ∀ a. F(stream string) ⊸ dom a ⊸ dom a 
+    let rec update (F(s :: ss)) w =
+      let w = run (text s) w in 
+      let (w0 :: w1) = w in
+      w0 :: update (F ss) w1
+    in
+    let w = run (mkText "") in 
+    update (F msgs) w)
+
+val main : G(∃a. dom a)
+let main =
+  G(let w = run mkButton in
+    let (w, F bs) = run clicks w in
+    let w0 = run (dynlabel (map (□toString) (count bs))) in
+    run attach (w, w0))  
+
+in main 

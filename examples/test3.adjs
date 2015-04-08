@@ -1,0 +1,37 @@
+val bool_to_string : bool -> string
+let bool_to_string b = if b then "true" else "false"
+
+val map : forall a b. !(a -> b) -> stream a -> stream b
+let rec map !f (x :: xs) = cons(f x, map (!f) xs)
+
+val unfold : forall a b. !(a -> b & next a) -> a -> stream b
+let rec unfold (!step) s1  =
+  let (x, next s2) = step s1 in
+  cons(x, unfold (!step) s2)
+
+val counter : stream bool -> stream num
+let counter bs =
+  val step : !(num & stream bool -> num & next(num & stream bool))
+  let step = !(fun (n, b :: bs) ->
+                 (n, if b then next(n+1, bs) else next(n, bs))) in 	 
+  unfold step (0, bs) 
+
+val dynlabel : stream string -> G(exists a. dom a)
+let dynlabel msgs =
+  G(val update : forall a. F(stream string) -o dom a -o dom a 
+    let rec update (F(s :: ss)) w =
+      let w = run (text s) w in 
+      let (w0, next w1) = run split w in
+      run merge (w0, next(update (F ss) w1))
+    in
+    let w = run (mkText "") in 
+    update (F msgs) w) 
+
+val main : G(exists a. dom a)
+let main  = 
+  G(let button = run mkButton in
+    let (button, F bs) = run mouseover button in
+    let text = run (dynlabel (map (!toString) (counter bs))) in 
+    run attach (button, text))
+
+in main 

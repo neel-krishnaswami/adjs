@@ -1,0 +1,40 @@
+type window : int
+let window = G(exists a. dom a)
+
+val map : forall a b. !(a -> b) -> alloc -> stream a -> stream b 
+let rec map (!f) u (x :: xs) =
+  cons(u, f x, map (!f) u xs)
+
+val zip : forall a b. alloc -> stream a & stream b -> stream (a & b)
+let rec zip u ((x :: xs), (y :: ys)) =
+  cons(u, (x,y), zip u (xs, ys))
+
+val always : forall a. alloc -> !a -> stream a
+let rec always u (!x) = cons(u, x, always u (!x))
+
+val dynbutton : alloc -> window
+let dynbutton u =
+  G(val grow : forall a. dom a -o F(stream bool) -o dom a
+    let rec grow w (F (b :: bs)) =
+      if b then
+        let w1 = run (mkText "Clicked!") in
+        let w = run attach (w, w1) in
+        let (f, next wrest) = run split w in
+        run merge (f, next(grow wrest (F bs)))
+      else
+        let (f, next wrest) = run split w in
+        run merge (f, next(grow wrest (F bs)))
+    in
+    let wroot = run vbox in
+    let wbutton = run mkButton in
+    let wtext = run (mkText "Click me") in
+    let wbutton = run attach (wbutton, wtext) in
+//    let (wbutton, fbs) = run (clicks u) wbutton in
+    let wroot = run attach (wroot, wbutton) in
+    grow wroot (F (always u (!false))))
+      
+
+
+in
+
+dynbutton 
