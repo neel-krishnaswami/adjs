@@ -46,8 +46,8 @@ let template config =
 <title>%s</title>
 </head>
 <body onload=\"$start('app_root', $main)\">
-<script type=\"text/javascript;version=1.8\" src=\"%s\"></script>
-<script type=\"text/javascript;version=1.8\" src=\"%s.js\"></script>
+<script src=\"%s\"></script>
+<script  src=\"%s.js\"></script>
 <div id=\"app_root\"></div>
 </body>
 </html>" config.title config.runtime config.target in
